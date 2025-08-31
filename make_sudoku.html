@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客製化數獨題目產生器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(9, 50px);
+            gap: 2px;
+            margin: 20px auto;
+            border: 3px solid #333;
+            background: #333;
+            padding: 10px;
+            user-select: none;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cell:hover {
+            background: #f0f8ff;
+            transform: scale(1.05);
+        }
+
+        .cell:focus {
+            outline: 2px solid #667eea;
+            background: #e6f7ff;
+        }
+
+        .cell.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        /* 3x3 區塊間的粗線 */
+        .cell:nth-child(3n):not(:nth-child(9n)) {
+            border-right: 3px solid #333;
+        }
+
+        .cell:nth-child(n+19):nth-child(-n+27) {
+            border-bottom: 3px solid #333;
+        }
+
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 3px solid #333;
+        }
+
+        /* 第一行和最後一行的邊框 */
+        .cell:nth-child(n+1):nth-child(-n+9) {
+            border-top: 3px solid #333;
+        }
+
+        .cell:nth-child(n+73):nth-child(-n+81) {
+            border-bottom: 3px solid #333;
+        }
+
+        .cell.empty {
+            background: #f7fafc;
+            color: #a0aec0;
+        }
+
+        .cell.pre-filled {
+            background: #e6f7ff;
+            color: #2b6cb0;
+            font-weight: bold;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #666;
+            min-height: 24px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: #48bb78;
+        }
+
+        .btn.secondary:hover {
+            background: #38a169;
+        }
+
+        .btn.danger {
+            background: #e53e3e;
+        }
+
+        .btn.danger:hover {
+            background: #c53030;
+        }
+
+        .btn.warning {
+            background: #ed8936;
+        }
+
+        .btn.warning:hover {
+            background: #dd6b20;
+        }
+
+        .puzzle-info {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .puzzle-info h2 {
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-size: 1.5em;
+        }
+
+        .puzzle-info p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+
+        .number-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .number-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .number-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .number-btn.selected {
+            background: #667eea;
+            color: white;
+        }
+
+
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            color: #4a5568;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .mode-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .mode-btn:hover {
+            background: #f7fafc;
+        }
+
+        .preset-selector {
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .preset-selector select {
+            padding: 8px 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            background: white;
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .preset-selector select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>客製化數獨題目產生器</h1>
+
+        <div class="puzzle-info">
+            <h2>數獨編輯器</h2>
+            <p>點擊網格單元格輸入數字，或選擇預設題目開始編輯</p>
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" id="edit-mode" onclick="setMode('edit')">編輯模式</button>
+            <button class="mode-btn" id="view-mode" onclick="setMode('view')">檢視模式</button>
+        </div>
+
+        <div class="preset-selector">
+            <select id="preset-select" onchange="loadPreset()">
+                <option value="">選擇預設題目...</option>
+                <option value="1">經典難題</option>
+                <option value="2">簡單題目</option>
+                <option value="3">中等難度</option>
+                <option value="4">空棋盤</option>
+            </select>
+        </div>
+
+        <div class="sudoku-grid" id="sudoku-grid">
+            <!-- 數獨網格將在此動態生成 -->
+        </div>
+
+        <div class="number-buttons" id="number-buttons">
+            <!-- 數字按鈕將在此動態生成 -->
+        </div>
+
+        <div class="status" id="status">準備開始編輯數獨題目...</div>
+
+        <div class="controls">
+            <button class="btn secondary" onclick="clearGrid()">清空棋盤</button>
+            <button class="btn warning" onclick="resetGrid()">重設為空</button>
+            <button class="btn" onclick="generateJSON()">產生 JSON</button>
+            <button class="btn danger" onclick="solveSudoku()">解題驗證</button>
+        </div>
+
+
+    </div>
+
+    <script>
+        let sudokuGrid = Array(9).fill().map(() => Array(9).fill(''));
+        let currentMode = 'edit';
+        let selectedCell = null;
+
+        // 預設題目數據
+        const presets = {
+            1: [ // 經典難題
+                ['5','3','','','','7','','',''],
+                ['6','','','','1','9','5','',''],
+                ['','9','8','','','','','',''],
+                ['8','','','','6','','','','3'],
+                ['4','','','','8','','3','','1'],
+                ['7','','','','2','','','','6'],
+                ['','6','','','','','','2','8',''],
+                ['','','','','4','1','9','','','5'],
+                ['','','','','','8','','','7','9']
+            ],
+            2: [ // 簡單題目
+                ['5','3','4','','7','','','',''],
+                ['6','','','','1','9','5','',''],
+                ['','9','8','','','','','',''],
+                ['8','','','','6','','','','3'],
+                ['4','','','','8','','3','','1'],
+                ['7','','','','2','','','','6'],
+                ['','6','','','','','','2','8',''],
+                ['','','','','4','1','9','','','5'],
+                ['','','','','','8','','','7','9']
+            ],
+            3: [ // 中等難度
+                ['','','','2','6','','7','','1'],
+                ['6','8','','','','7','','9',''],
+                ['1','9','','','','4','5','',''],
+                ['8','2','','1','','','','4',''],
+                ['','','4','6','','2','9','',''],
+                ['','5','','','','3','','2','8'],
+                ['','','9','3','','','','7','4'],
+                ['','4','','','','5','','3','6'],
+                ['7','','3','','1','8','','','']
+            ],
+            4: [ // 空棋盤
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill(''),
+                Array(9).fill('')
+            ]
+        };
+
+        function initGrid() {
+            const grid = document.getElementById('sudoku-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    cell.tabIndex = 0;
+                    cell.addEventListener('click', () => selectCell(cell));
+                    cell.addEventListener('keydown', handleKeyPress);
+                    cell.addEventListener('focus', () => selectCell(cell));
+                    grid.appendChild(cell);
+                }
+            }
+
+            updateGridDisplay();
+            initNumberButtons();
+        }
+
+        function initNumberButtons() {
+            const numberButtons = document.getElementById('number-buttons');
+            numberButtons.innerHTML = '';
+
+            // 添加數字按鈕 1-9
+            for (let i = 1; i <= 9; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'number-btn';
+                btn.textContent = i;
+                btn.onclick = () => inputNumber(i.toString());
+                numberButtons.appendChild(btn);
+            }
+
+            // 添加清除按鈕
+            const clearBtn = document.createElement('button');
+            clearBtn.className = 'number-btn';
+            clearBtn.textContent = '清除';
+            clearBtn.onclick = () => inputNumber('');
+            numberButtons.appendChild(clearBtn);
+        }
+
+        function selectCell(cell) {
+            if (currentMode !== 'edit') return;
+
+            // 移除之前的選擇
+            document.querySelectorAll('.cell.selected').forEach(c => c.classList.remove('selected'));
+
+            // 選擇新單元格
+            cell.classList.add('selected');
+            selectedCell = cell;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            updateStatus(`已選擇第 ${row + 1} 行，第 ${col + 1} 列`);
+        }
+
+        function inputNumber(num) {
+            if (!selectedCell || currentMode !== 'edit') return;
+
+            const row = parseInt(selectedCell.dataset.row);
+            const col = parseInt(selectedCell.dataset.col);
+
+            sudokuGrid[row][col] = num;
+            updateGridDisplay();
+
+            updateStatus(`在 (${row + 1}, ${col + 1}) 輸入數字: ${num || '清除'}`);
+        }
+
+        function handleKeyPress(event) {
+            if (currentMode !== 'edit') return;
+
+            const cell = event.target;
+            if (!cell.classList.contains('cell')) return;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            if (event.key >= '1' && event.key <= '9') {
+                sudokuGrid[row][col] = event.key;
+                updateGridDisplay();
+                updateStatus(`在 (${row + 1}, ${col + 1}) 輸入數字: ${event.key}`);
+            } else if (event.key === 'Backspace' || event.key === 'Delete' || event.key === ' ') {
+                sudokuGrid[row][col] = '';
+                updateGridDisplay();
+                updateStatus(`清除 (${row + 1}, ${col + 1}) 的數字`);
+            }
+
+            event.preventDefault();
+        }
+
+        function updateGridDisplay() {
+            const cells = document.querySelectorAll('.cell');
+
+            cells.forEach(cell => {
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                const value = sudokuGrid[row][col];
+
+                cell.textContent = value;
+                cell.classList.toggle('empty', !value);
+
+                // 重新選擇當前選擇的單元格
+                if (selectedCell && selectedCell.dataset.row == row && selectedCell.dataset.col == col) {
+                    cell.classList.add('selected');
+                }
+            });
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+
+            document.getElementById('edit-mode').classList.toggle('active', mode === 'edit');
+            document.getElementById('view-mode').classList.toggle('active', mode === 'view');
+
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                if (mode === 'edit') {
+                    cell.style.cursor = 'pointer';
+                } else {
+                    cell.style.cursor = 'default';
+                    cell.classList.remove('selected');
+                }
+            });
+
+            selectedCell = null;
+            updateStatus(`${mode === 'edit' ? '編輯' : '檢視'}模式已啟動`);
+        }
+
+        function loadPreset() {
+            const select = document.getElementById('preset-select');
+            const presetId = select.value;
+
+            if (!presetId) return;
+
+            sudokuGrid = presets[presetId].map(row => [...row]);
+            updateGridDisplay();
+            updateStatus(`已載入預設題目 ${presetId}`);
+
+            // 重設選擇
+            select.value = '';
+        }
+
+        function clearGrid() {
+            sudokuGrid = Array(9).fill().map(() => Array(9).fill(''));
+            updateGridDisplay();
+            updateStatus('棋盤已清空');
+        }
+
+        function resetGrid() {
+            clearGrid();
+            document.getElementById('preset-select').value = '';
+            updateStatus('棋盤已重設');
+        }
+
+        function generateJSON() {
+            // 將空字符串轉換為點號
+            const formattedGrid = sudokuGrid.map(row =>
+                row.map(cell => cell === '' ? '.' : cell)
+            );
+
+            const jsonString = JSON.stringify(formattedGrid, null, 4);
+
+            // 創建Blob對象
+            const blob = new Blob([jsonString], { type: 'application/json' });
+
+            // 創建下載連結
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sudoku_puzzle.json';
+
+            // 自動觸發下載
+            document.body.appendChild(a);
+            a.click();
+
+            // 清理
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            updateStatus('JSON 檔案已下載');
+        }
+
+        async function solveSudoku() {
+            // 準備數據發送到 C++ 解題器
+            const puzzleData = sudokuGrid.map(row =>
+                row.map(cell => cell === '' ? '.' : cell)
+            );
+
+            try {
+                updateStatus('正在解決數獨...');
+
+                // 創建一個臨時文件來存儲當前題目
+                const puzzleJson = JSON.stringify(puzzleData);
+
+                // 這裡我們可以通過 fetch 發送到一個服務器端點來運行 C++ 程式
+                // 或者直接在前端模擬解題邏輯
+
+                console.log('當前數獨題目:', puzzleData);
+
+                updateStatus('題目已準備，解題功能需要後端服務器支援');
+
+            } catch (error) {
+                updateStatus('解題失敗: ' + error.message);
+                console.error('解題錯誤:', error);
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+        }
+
+        // 頁面載入初始化
+        window.addEventListener('DOMContentLoaded', function() {
+            initGrid();
+            updateStatus('客製化數獨編輯器已就緒');
+        });
+
+        // 添加一些動畫效果
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach((cell, index) => {
+                    cell.style.animationDelay = `${index * 5}ms`;
+                    cell.style.animation = 'fadeIn 0.5s ease-in-out forwards';
+                });
+            }, 100);
+        });
+
+        // 添加 fadeIn 動畫
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
