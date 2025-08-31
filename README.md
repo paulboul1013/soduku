@@ -34,6 +34,17 @@ python3 -m http.server 8000
 http://localhost:8000/sudoku.html
 
 ```
+## 製作專屬數獨題目
+專門製造數獨題目的網站，設計好題目後，可以下載json格式
+```
+# 啟動網頁服務器
+python3 -m http.server 8000
+
+# 開啟網址
+http://localhost:8000/make_sudoku.html
+
+```
+
 
 ## 📁 檔案說明
 
