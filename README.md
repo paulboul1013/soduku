@@ -29,11 +29,11 @@ g++ -std=c++20 -o sudoku sudoku.cpp
 
 # 啟動網頁服務器
 python3 -m http.server 8000
+
+# 開啟網址
+http://localhost:8000/sudoku.html
+
 ```
-
-### 方法三：在瀏覽器中查看
-
-開啟瀏覽器訪問：`http://localhost:8000/sudoku.html`
 
 ## 📁 檔案說明
 
@@ -60,4 +60,4 @@ python3 -m http.server 8000
 
 ---
 
-**作者**：使用 C++ 高效演算法，HTML 美觀展示
+**作者**：paulboul1013
