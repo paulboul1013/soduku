@@ -68,8 +68,11 @@ http://localhost:8000/make_sudoku.html
 - **位元優化**：使用 9 位元表示數字狀態
 - **約束檢查**：行、列、3x3 區塊約束驗證
 
-## to-do
-- 新增更方便的介面可以新增題目，而不用再修改sudoku.cpp內部題目
+## 新功能
+- 新增make_sudoku.html更方便的介面可以新增題目，並產生json檔(2025/8/31 added)
+
+## 目前問題
+- 無法整合sudoku.cpp輸入，json格式很難統一，html生產出來的json格式，無法用在sudoku.cpp中
 
 ---
 
