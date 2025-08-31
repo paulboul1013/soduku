@@ -41,7 +41,7 @@ python3 -m http.server 8000
 - `sudoku.html` - 網頁界面
 - `sudoku.json` - 數獨解答數據
 - `update_sudoku.sh` - 自動化更新腳本
-- `README_sudoku.md` - 詳細說明文檔
+- `README.md` - 詳細說明文檔
 
 ## 🎯 功能特點
 
