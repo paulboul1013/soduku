@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數獨解題器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 50px);
+            grid-template-rows: repeat(9, 50px);
+            gap: 2px;
+            margin: 20px auto;
+            border: 3px solid #333;
+            background: #333;
+            padding: 10px;
+        }
+
+        .cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .cell:hover {
+            background: #f0f8ff;
+            transform: scale(1.05);
+        }
+
+        /* 3x3 區塊間的粗線 */
+        .cell:nth-child(3n):not(:nth-child(9n)) {
+            border-right: 3px solid #333;
+        }
+
+        .cell:nth-child(n+19):nth-child(-n+27) {
+            border-bottom: 3px solid #333;
+        }
+
+        .cell:nth-child(n+46):nth-child(-n+54) {
+            border-bottom: 3px solid #333;
+        }
+
+        /* 第一行和最後一行的邊框 */
+        .cell:nth-child(n+1):nth-child(-n+9) {
+            border-top: 3px solid #333;
+        }
+
+        .cell:nth-child(n+73):nth-child(-n+81) {
+            border-bottom: 3px solid #333;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #666;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn.secondary {
+            background: #48bb78;
+        }
+
+        .btn.secondary:hover {
+            background: #38a169;
+        }
+
+        .btn.danger {
+            background: #e53e3e;
+        }
+
+        .btn.danger:hover {
+            background: #c53030;
+        }
+
+
+
+        .cell.empty {
+            background: #f7fafc;
+            color: #a0aec0;
+        }
+
+        .puzzle-info {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .puzzle-info h2 {
+            color: #4a5568;
+            margin-bottom: 5px;
+            font-size: 1.5em;
+        }
+
+        .puzzle-info p {
+            color: #718096;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .loading {
+            color: #667eea;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>數獨解題器</h1>
+
+        <div class="puzzle-info">
+            <h2>數獨解答</h2>
+            <p>使用 C++ 程式解出的數獨解答</p>
+        </div>
+
+        <div class="sudoku-grid" id="sudoku-grid">
+            <!-- 數獨網格將在此動態生成 -->
+        </div>
+
+        <div class="status" id="status">載入中...</div>
+
+        <div class="controls">
+            <button class="btn" onclick="loadSudoku()">重新載入解答</button>
+        </div>
+    </div>
+
+    <script>
+        let sudokuData = null;
+
+        async function loadSudoku() {
+            const status = document.getElementById('status');
+
+            try {
+                status.textContent = '載入中...';
+                status.className = 'status loading';
+
+                // 讀取 JSON 文件
+                const response = await fetch('./sudoku.json');
+                if (!response.ok) {
+                    throw new Error('無法載入數獨數據');
+                }
+
+                sudokuData = await response.json();
+                renderSudoku();
+
+                status.textContent = '數獨解答載入完成！';
+                status.className = 'status';
+
+            } catch (error) {
+                console.error('載入失敗:', error);
+                status.textContent = '載入失敗: ' + error.message;
+                status.className = 'status';
+                status.style.color = '#e53e3e';
+            }
+        }
+
+        function renderSudoku() {
+            const grid = document.getElementById('sudoku-grid');
+
+            if (!sudokuData) {
+                return;
+            }
+
+            // 清空現有網格
+            grid.innerHTML = '';
+
+            // 生成數獨網格
+            for (let i = 0; i < 9; i++) {
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.textContent = sudokuData[i][j];
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function showConsole() {
+            console.log('數獨解答：');
+            if (sudokuData) {
+                sudokuData.forEach((row, i) => {
+                    console.log(`${i + 1}: ${row.join(' ')}`);
+                });
+            }
+        }
+
+        // 頁面載入時自動載入數獨
+        window.addEventListener('DOMContentLoaded', loadSudoku);
+
+        // 添加一些動畫效果
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => {
+                const cells = document.querySelectorAll('.cell');
+                cells.forEach((cell, index) => {
+                    cell.style.animationDelay = `${index * 10}ms`;
+                    cell.style.animation = 'fadeIn 0.5s ease-in-out forwards';
+                });
+            }, 100);
+        });
+
+        // 添加 fadeIn 動畫
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: scale(0.8);
+                }
+                to {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
